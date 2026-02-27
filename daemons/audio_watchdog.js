@@ -6,7 +6,10 @@
 const CHECK_INTERVAL = 10000;
 // ===== Configurable parameters end =====
 
-// ===== Import classes =====
+// ===== Request permission =====
+runtime.requestPermissions(android.Manifest.permission.BLUETOOTH_CONNECT);
+
+// ===== Shared =====
 importClass(android.media.AudioManager);
 var audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE);
 importClass(android.content.IntentFilter);importClass(android.content.Intent);

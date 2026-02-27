@@ -8,4 +8,6 @@ var hasIpAddress = wifiInfo.getIpAddress() !== 0;
 var isWifiConnected = isWifiEnabled && hasIpAddress;
 if (isWifiConnected) {    
     console.log("WiFi connected:", wifiInfo.getSSID());
+} else {
+    console.log("WiFi not connected");
 }

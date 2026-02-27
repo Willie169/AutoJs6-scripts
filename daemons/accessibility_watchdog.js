@@ -2,9 +2,8 @@
  * Accessibility Watchdog
  *
  * Function:
- * - Record enabled_accessibility_services on first startup
- * - Periodically check if it has been removed
- * - If disabled, automatically add it back
+ * - Record enabled_accessibility_services on first startup into BASELINE_FILE
+ * - Periodically check and automatically add all services in baseline that have been disabled back
  *
  * Requirement:
  *  - WRITE_SECURE_SETTINGS permission
@@ -12,16 +11,17 @@
  */
 
 // ===== Configurable parameters start =====
-const CHECK_INTERVAL = 10000;
+const CHECK_INTERVAL = 10000; // 10 seconds
+const BASELINE_FILE = "./accessibility_baseline.txt";
 // ===== Configurable parameters end =====
-
-// ===== Storage =====
-var store = storages.create("accessibility_watchdog");
-store.clear();
 
 // ===== Java class path =====
 var Settings = android.provider.Settings;
 var resolver = context.getContentResolver();
+var File = java.io.File;
+var FileWriter = java.io.FileWriter;
+var BufferedReader = java.io.BufferedReader;
+var FileReader = java.io.FileReader;
 
 // ===== Get enabled services =====
 function getEnabledServices() {
@@ -32,14 +32,7 @@ function getEnabledServices() {
 
     if (!value) return [];
 
-    var arr = value.split(":");
-    var out = [];
-
-    for (var i = 0; i < arr.length; i++) {
-        if (arr[i]) out.push(arr[i]);
-    }
-
-    return out;
+    return value.split(":").filter(function(s) { return s; });
 }
 
 // ===== Set enabled services =====
@@ -57,16 +50,35 @@ function setEnabledServices(list) {
     );
 }
 
+// ===== Read baseline from file =====
+function readBaselineFile() {
+    var file = new File(BASELINE_FILE);
+    if (!file.exists()) return null;
+
+    var reader = new BufferedReader(new FileReader(file));
+    var line = reader.readLine();
+    reader.close();
+
+    if (!line) return null;
+
+    return line.split(":").filter(function(s) { return s; });
+}
+
+// ===== Write baseline to file =====
+function writeBaselineFile(services) {
+    var writer = new FileWriter(BASELINE_FILE, false);
+    writer.write(services.join(":"));
+    writer.close();
+    console.info("Baseline written to " + BASELINE_FILE + ": " + services);
+}
+
 // ===== Initialize baseline =====
 function initBaseline() {
-    var baseline = store.get("baseline");
-
+    var baseline = readBaselineFile();
     if (!baseline) {
         baseline = getEnabledServices();
-        store.put("baseline", baseline);
-        console.info("Accessibility services baseline initialized: " + baseline);
+        writeBaselineFile(baseline);
     }
-
     return baseline;
 }
 
@@ -94,9 +106,9 @@ function watchdog() {
 
     if (changed) {
         setEnabledServices(current);
-        console.warn("accessibility services recovered");
+        console.warn("Accessibility services recovered");
     } else {
-        console.log("no accessibility service disabled");
+        console.log("No accessibility service disabled");
     }
 }
 

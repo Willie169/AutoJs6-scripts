@@ -38,6 +38,9 @@ function __keepAlive(title) {
 
 __keepAlive("Daemon Manager");
 
+const PowerManager = android.os.PowerManager;
+const wakeLock = PowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Daemon Manager");
+
 setInterval(() => {
     __ensureScript("./daemon_manager_helper_A.js");
     __ensureScript("./daemon_manager_helper_B.js");
@@ -45,6 +48,17 @@ setInterval(() => {
     files.listDir(DAEMONS_DIR).forEach(f => {
         __ensureScript(DAEMONS_DIR + f);
     });
+    if (!wakeLock.isHeld()) {
+        wakeLock.acquire();
+        console.log("manager wake lock acquired.");
+    }
 }, CHECK_INTERVAL);
 
 setInterval(() => {}, 1 << 30);
+
+events.on("exit", () => {
+    if (wakeLock.isHeld()) {
+        wakeLock.release();
+        console.log("manager wake lock released.");
+    }
+});
