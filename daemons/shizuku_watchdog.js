@@ -141,7 +141,6 @@ function watchdog() {
     else console.log("Wi-Fi not connected");
 
     if (shizuku.isRunning()) {
-        Settings.Global.putInt(resolver, "adb_wifi_enabled", 1);
         Settings.Global.putInt(resolver, "adb_wifi_enabled", 0);
         console.log("Shizuku running");
     } else if (SHIZUKU_RESTART && ssid) {
