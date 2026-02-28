@@ -2,12 +2,13 @@
  * Accessibility Watchdog
  *
  * Function:
- * - Record enabled_accessibility_services on first startup into BASELINE_FILE
- * - Periodically check and automatically add all services in baseline that have been disabled back
+ * - Record enabled accessibility services into BASELINE_FILE at startup
+ * - Add all newly added enabled accessibility services into BASELINE_FILE
+ * - Automatically recover all accessibility services in BASELINE_FILE that have been disabled
  *
  * Requirement:
  *  - WRITE_SECURE_SETTINGS permission
- *  - Enable all accessibility services you want to keep enabled before starting this script
+ *  - To disable an accessibility service, stop this script, disable it from settings, remove BASELINE_FILE, and then start this script again
  */
 
 // ===== Configurable parameters start =====
@@ -18,21 +19,32 @@ const BASELINE_FILE = "../accessibility_baseline.txt";
 // ===== Java class path =====
 var Settings = android.provider.Settings;
 var resolver = context.getContentResolver();
-var File = java.io.File;
-var FileWriter = java.io.FileWriter;
-var BufferedReader = java.io.BufferedReader;
-var FileReader = java.io.FileReader;
+var pm = context.getPackageManager();
+
+// ===== Utilities =====
+function splitServices(value) {
+    if (!value) return [];
+    return value.split(":").filter(function (s) { return s; });
+}
+
+function joinServices(arr) {
+    return arr.join(":");
+}
+
+function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+        if (b.indexOf(a[i]) === -1) return false;
+    }
+    return true;
+}
 
 // ===== Get enabled services =====
 function getEnabledServices() {
-    var value = Settings.Secure.getString(
+    return Settings.Secure.getString(
         resolver,
         Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-    );
-
-    if (!value) return [];
-
-    return value;
+    ) || "";
 }
 
 // ===== Set enabled services =====
@@ -42,7 +54,6 @@ function setEnabledServices(value) {
         Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
         value
     );
-
     Settings.Secure.putInt(
         resolver,
         Settings.Secure.ACCESSIBILITY_ENABLED,
@@ -50,62 +61,91 @@ function setEnabledServices(value) {
     );
 }
 
+// ===== Service existence check =====
+function serviceExists(serviceName) {
+    try {
+        var parts = serviceName.split("/");
+        if (parts.length !== 2) return false;
+
+        var pkg = parts[0];
+        pm.getPackageInfo(pkg, 0);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 // ===== Read baseline from file =====
-function readBaselineFile() {
+function readBaseline() {
     if (!files.exists(BASELINE_FILE)) return null;
-
-    var value = files.read(BASELINE_FILE);
-    if (!value) return null;
-
-    return value;
+    return files.read(BASELINE_FILE) || null;
 }
 
 // ===== Write baseline to file =====
-function writeBaselineFile(value) {
+function writeBaseline(value) {
     files.write(BASELINE_FILE, value);
-    console.info("Baseline written to " + BASELINE_FILE + ": " + value);
+    console.info("Baseline updated: " + value);
 }
 
-// ===== Initialize baseline =====
+// ===== Initialize =====
 function initBaseline() {
-    var value = readBaselineFile();
+    var value = readBaseline();
     if (!value) {
         value = getEnabledServices();
-        writeBaselineFile(value);
-    } else {
-        console.log("Baseline read from " + BASELINE_FILE + ": " + value);
+        writeBaseline(value);
     }
     return value;
-}
-
-// ===== Contains =====
-function contains(arr, v) {
-    for (var i = 0; i < arr.length; i++) {
-        if (arr[i] === v) return true;
-    }
-    return false;
 }
 
 // ===== Watchdog =====
 function watchdog() {
-    var value = initBaseline();
-    var baseline = value.split(":").filter(function(s) { return s; }) || [];
-    var current_value = getEnabledServices();
-    var current = current_value.split(":").filter(function(s) { return s; });
+    var baseline = initBaseline();
+    var baseline = splitServices(baseline);
+
+    var current = getEnabledServices();
+    var current = splitServices(current);
+
     var changed = false;
+    var baselineChanged = false;
+
+    var filteredBaseline = [];
+    for (var i = 0; i < baseline.length; i++) {
+        if (serviceExists(baseline[i])) {
+            filteredBaseline.push(baseline[i]);
+        } else {
+            console.warn("Service uninstalled, removing from baseline: " + baseline[i]);
+            baselineChanged = true;
+        }
+    }
+    baseline = filteredBaseline;
 
     for (var i = 0; i < baseline.length; i++) {
-        if (!contains(current, baseline[i])) {
-            console.warn("Service disabled found: " + baseline[i]);
+        if (current.indexOf(baseline[i]) === -1) {
+            console.warn("Service disabled detected: " + baseline[i]);
+            current.push(baseline[i]);
             changed = true;
         }
     }
 
+    for (var i = 0; i < current.length; i++) {
+        if (baseline.indexOf(current[i]) === -1) {
+            console.info("New service detected, adding to baseline: " + current[i]);
+            baseline.push(current[i]);
+            baselineChanged = true;
+        }
+    }
+
     if (changed) {
-        setEnabledServices(value);
+        setEnabledServices(joinServices(current));
         console.warn("Accessibility services recovered");
-    } else {
-        console.log("No accessibility service disabled");
+    }
+
+    if (baselineChanged) {
+        writeBaseline(joinServices(baseline));
+    }
+
+    if (!changed && !baselineChanged) {
+        console.log("No change detected");
     }
 }
 
