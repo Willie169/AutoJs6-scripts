@@ -39,7 +39,12 @@ function __keepAlive(title) {
 __keepAlive("Daemon Manager");
 
 const PowerManager = android.os.PowerManager;
-const wakeLock = PowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Daemon Manager");
+const powerManager = context.getSystemService(context.POWER_SERVICE);
+
+const wakeLock = powerManager.newWakeLock(
+    PowerManager.PARTIAL_WAKE_LOCK,
+    "DaemonManager::WakeLock"
+);
 
 setInterval(() => {
     __ensureScript("./daemon_manager_helper_A.js");

@@ -11,8 +11,8 @@
  */
 
 // ===== Configurable parameters start =====
-const CHECK_INTERVAL = 10000; // 10 seconds
-const BASELINE_FILE = "./accessibility_baseline.txt";
+const CHECK_INTERVAL = 10000;
+const BASELINE_FILE = "../accessibility_baseline.txt";
 // ===== Configurable parameters end =====
 
 // ===== Java class path =====
@@ -32,15 +32,15 @@ function getEnabledServices() {
 
     if (!value) return [];
 
-    return value.split(":").filter(function(s) { return s; });
+    return value;
 }
 
 // ===== Set enabled services =====
-function setEnabledServices(list) {
+function setEnabledServices(value) {
     Settings.Secure.putString(
         resolver,
         Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-        list.join(":")
+        value
     );
 
     Settings.Secure.putInt(
@@ -52,34 +52,30 @@ function setEnabledServices(list) {
 
 // ===== Read baseline from file =====
 function readBaselineFile() {
-    var file = new File(BASELINE_FILE);
-    if (!file.exists()) return null;
+    if (!files.exists(BASELINE_FILE)) return null;
 
-    var reader = new BufferedReader(new FileReader(file));
-    var line = reader.readLine();
-    reader.close();
+    var value = files.read(BASELINE_FILE);
+    if (!value) return null;
 
-    if (!line) return null;
-
-    return line.split(":").filter(function(s) { return s; });
+    return value;
 }
 
 // ===== Write baseline to file =====
-function writeBaselineFile(services) {
-    var writer = new FileWriter(BASELINE_FILE, false);
-    writer.write(services.join(":"));
-    writer.close();
-    console.info("Baseline written to " + BASELINE_FILE + ": " + services);
+function writeBaselineFile(value) {
+    files.write(BASELINE_FILE, value);
+    console.info("Baseline written to " + BASELINE_FILE + ": " + value);
 }
 
 // ===== Initialize baseline =====
 function initBaseline() {
-    var baseline = readBaselineFile();
-    if (!baseline) {
-        baseline = getEnabledServices();
-        writeBaselineFile(baseline);
+    var value = readBaselineFile();
+    if (!value) {
+        value = getEnabledServices();
+        writeBaselineFile(value);
+    } else {
+        console.log("Baseline read from " + BASELINE_FILE + ": " + value);
     }
-    return baseline;
+    return value;
 }
 
 // ===== Contains =====
@@ -92,20 +88,21 @@ function contains(arr, v) {
 
 // ===== Watchdog =====
 function watchdog() {
-    var baseline = initBaseline() || [];
-    var current = getEnabledServices();
+    var value = initBaseline();
+    var baseline = value.split(":").filter(function(s) { return s; }) || [];
+    var current_value = getEnabledServices();
+    var current = current_value.split(":").filter(function(s) { return s; });
     var changed = false;
 
     for (var i = 0; i < baseline.length; i++) {
         if (!contains(current, baseline[i])) {
             console.warn("Service disabled found: " + baseline[i]);
-            current.push(baseline[i]);
             changed = true;
         }
     }
 
     if (changed) {
-        setEnabledServices(current);
+        setEnabledServices(value);
         console.warn("Accessibility services recovered");
     } else {
         console.log("No accessibility service disabled");

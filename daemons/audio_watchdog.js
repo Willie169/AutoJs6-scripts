@@ -7,7 +7,7 @@ const CHECK_INTERVAL = 10000;
 // ===== Configurable parameters end =====
 
 // ===== Request permission =====
-runtime.requestPermissions(android.Manifest.permission.BLUETOOTH_CONNECT);
+runtime.requestPermissions([android.Manifest.permission.BLUETOOTH_CONNECT]);
 
 // ===== Shared =====
 importClass(android.media.AudioManager);
