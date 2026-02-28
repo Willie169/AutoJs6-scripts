@@ -70,6 +70,8 @@ function runInTermuxCommand(args) {
 function writeShizukuScriptInTermux() {
     var scriptContent = String.raw`#!/data/data/com.termux/files/usr/bin/bash
 
+adb kill-server
+
 # Make a list of open ports
 ports=$( nmap -sT -p30000-50000 --open localhost | grep "open" | cut -f1 -d/ )
 
@@ -85,11 +87,17 @@ for port in $ports; do
 
     adb reconnect offline
 
+    target_device="localhost:$port"
+
+    echo "Target device: $target_device"
+
     # Start Shizuku
-    adb shell "$( adb shell pm path moe.shizuku.privileged.api | sed 's/^package://;s/base\.apk/lib\/arm64\/libshizuku\.so/' )"
+    adb -s "$target_device" shell "$( adb -s "$target_device" shell pm path moe.shizuku.privileged.api | sed 's/^package://;s/base\.apk/lib\/arm64\/libshizuku\.so/' )"
 
     # Disable wireless debugging
-    adb shell settings put global adb_wifi_enabled 0
+    adb -s "$target_device" shell settings put global adb_wifi_enabled 0
+
+    adb kill-server
 
     exit 0
   fi
@@ -108,6 +116,7 @@ exit 1`;
 function startShizuku() {
     console.log("Starting Shizuku...");
     Settings.Global.putInt(resolver, "adb_wifi_enabled", 1);
+    Settings.Global.putInt(resolver, "adb_enabled", 1);
     runInTermuxCommand([SHIZUKU_SCRIPT]);
 }
 
@@ -122,6 +131,9 @@ function isWifiConnected() {
     return isEnabled && hasIp ? wifiInfo.getSSID() : null;
 }
 
+// ===== Main loop =====
+const intervalId = setInterval(watchdog, CHECK_INTERVAL);
+
 // ===== Watchdog =====
 function watchdog() {
     const ssid = isWifiConnected();
@@ -129,16 +141,16 @@ function watchdog() {
     else console.log("Wi-Fi not connected");
 
     if (shizuku.isRunning()) {
+        Settings.Global.putInt(resolver, "adb_wifi_enabled", 1);
+        Settings.Global.putInt(resolver, "adb_wifi_enabled", 0);
         console.log("Shizuku running");
     } else if (SHIZUKU_RESTART && ssid) {
         console.warn("Shizuku not running, attempting restart...");
         writeShizukuScriptInTermux();
         startShizuku();
-        exit();
+        clearInterval(intervalId);
+        setTimeout(exit, 100000);
     } else {
         console.log("Shizuku not running");
     }
 }
-
-// ===== Main loop =====
-setInterval(watchdog, CHECK_INTERVAL);
