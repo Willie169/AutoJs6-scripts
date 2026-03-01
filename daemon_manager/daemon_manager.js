@@ -49,13 +49,12 @@ const wakeLock = powerManager.newWakeLock(
 setInterval(() => {
     __ensureScript("./daemon_manager_helper_A.js");
     __ensureScript("./daemon_manager_helper_B.js");
-    console.log("manager heartbeat");
     files.listDir(DAEMONS_DIR).forEach(f => {
         __ensureScript(DAEMONS_DIR + f);
     });
     if (!wakeLock.isHeld()) {
         wakeLock.acquire();
-        console.log("manager wake lock acquired.");
+        console.log("Daemon manager wake lock acquired.");
     }
 }, CHECK_INTERVAL);
 
@@ -64,6 +63,6 @@ setInterval(() => {}, 1 << 30);
 events.on("exit", () => {
     if (wakeLock.isHeld()) {
         wakeLock.release();
-        console.log("manager wake lock released.");
+        console.log("Daemon manager wake lock released.");
     }
 });

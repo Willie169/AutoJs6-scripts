@@ -114,7 +114,6 @@ exit 1`;
 
 // ===== Start Shizuk via Termuxu =====
 function startShizuku() {
-    console.log("Starting Shizuku...");
     Settings.Global.putInt(resolver, "adb_wifi_enabled", 1);
     Settings.Global.putInt(resolver, "adb_enabled", 1);
     runInTermuxCommand([SHIZUKU_SCRIPT]);
@@ -137,19 +136,15 @@ const intervalId = setInterval(watchdog, CHECK_INTERVAL);
 // ===== Watchdog =====
 function watchdog() {
     const ssid = isWifiConnected();
-    if (ssid) console.log("Wi-Fi connected:", ssid);
-    else console.log("Wi-Fi not connected");
 
     if (shizuku.isRunning()) {
         Settings.Global.putInt(resolver, "adb_wifi_enabled", 0);
-        console.log("Shizuku running");
+        Settings.Global.putInt(resolver, "adb_enabled", 1);
     } else if (SHIZUKU_RESTART && ssid) {
-        console.warn("Shizuku not running, attempting restart...");
+        console.warn("Shizuku not running and Wi-Fi connected: " + ssid + ", attempting restart Shizuku...");
         writeShizukuScriptInTermux();
         startShizuku();
         clearInterval(intervalId);
         setTimeout(exit, 100000);
-    } else {
-        console.log("Shizuku not running");
     }
 }

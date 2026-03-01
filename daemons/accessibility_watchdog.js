@@ -84,7 +84,7 @@ function readBaseline() {
 // ===== Write baseline to file =====
 function writeBaseline(value) {
     files.write(BASELINE_FILE, value);
-    console.info("Baseline updated: " + value);
+    console.info("Accessibility service baseline updated: " + value);
 }
 
 // ===== Initialize =====
@@ -113,7 +113,7 @@ function watchdog() {
         if (serviceExists(baseline[i])) {
             filteredBaseline.push(baseline[i]);
         } else {
-            console.warn("Service uninstalled, removing from baseline: " + baseline[i]);
+            console.warn("Accessibility service uninstalled, removing from baseline: " + baseline[i]);
             baselineChanged = true;
         }
     }
@@ -121,7 +121,7 @@ function watchdog() {
 
     for (var i = 0; i < baseline.length; i++) {
         if (current.indexOf(baseline[i]) === -1) {
-            console.warn("Service disabled detected: " + baseline[i]);
+            console.warn("Accessibility service disabled detected: " + baseline[i]);
             current.push(baseline[i]);
             changed = true;
         }
@@ -129,7 +129,7 @@ function watchdog() {
 
     for (var i = 0; i < current.length; i++) {
         if (baseline.indexOf(current[i]) === -1) {
-            console.info("New service detected, adding to baseline: " + current[i]);
+            console.info("New accessibility service detected, adding to baseline: " + current[i]);
             baseline.push(current[i]);
             baselineChanged = true;
         }
@@ -142,10 +142,6 @@ function watchdog() {
 
     if (baselineChanged) {
         writeBaseline(joinServices(baseline));
-    }
-
-    if (!changed && !baselineChanged) {
-        console.log("No change detected");
     }
 }
 

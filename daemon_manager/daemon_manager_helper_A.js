@@ -40,7 +40,6 @@ __keepAlive("Daemon Manager Helper A");
 setInterval(() => {
     __ensureScript("./daemon_manager_helper_B.js");
     __ensureScript("./daemon_manager.js");
-    console.log("helper A heartbeat");
 }, CHECK_INTERVAL);
 
 setInterval(() => {}, 1 << 30);

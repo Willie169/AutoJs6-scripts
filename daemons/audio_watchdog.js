@@ -2,10 +2,6 @@
  * Audio Watchdog
  */
 
-// ===== Configurable parameters start =====
-const CHECK_INTERVAL = 10000;
-// ===== Configurable parameters end =====
-
 // ===== Request permission =====
 runtime.requestPermissions([android.Manifest.permission.BLUETOOTH_CONNECT]);
 
@@ -14,9 +10,10 @@ importClass(android.media.AudioManager);
 var audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE);
 importClass(android.content.IntentFilter);importClass(android.content.Intent);
 importClass(android.content.BroadcastReceiver);
+
+// ===== Bluetooth =====
 importClass(android.bluetooth.BluetoothAdapter);
 
-// ===== Bluetooth enabled/disabled =====
 var btReceiver = new BroadcastReceiver({
     onReceive: function (ctx, intent) {
         if (intent.getAction() === BluetoothAdapter.ACTION_STATE_CHANGED) {
@@ -26,41 +23,21 @@ var btReceiver = new BroadcastReceiver({
             } else if (state === BluetoothAdapter.STATE_OFF) {
                 console.log("Bluetooth disabled");
             }
+        } else if (intent.getAction() === BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED) {
+            var state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, -1);
+            if (state === BluetoothAdapter.STATE_CONNECTED) {
+                console.log("Bluetooth connected");
+            } else if (state === BluetoothAdapter.STATE_DISCONNECTED) {
+                console.log("Bluetooth disconnected");
+            }
         }
     }
 });
 
-var btFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+var btFilter = new IntentFilter();
+btFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+btFilter.addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
 context.registerReceiver(btReceiver, btFilter);
-
-// ===== Bluetooth connected/disconnected =====
-importClass(android.bluetooth.BluetoothDevice);
-
-var deviceReceiver = new BroadcastReceiver({
-    onReceive: function (context, intent) {
-        var action = intent.getAction();
-
-        if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
-            var device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            console.log("ACL CONNECTED: " + device.getName());
-        }
-
-        if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-            var device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            console.log("ACL DISCONNECTED: " + device.getName());
-        }
-    }
-});
-
-var deviceFilter = new IntentFilter();
-deviceFilter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
-deviceFilter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
-
-context.registerReceiver(
-    deviceReceiver,
-    deviceFilter,
-    Context.RECEIVER_NOT_EXPORTED
-);
 
 // ===== Headphone inserted/removed =====
 var headsetReceiver = new BroadcastReceiver({
@@ -76,7 +53,7 @@ var headsetReceiver = new BroadcastReceiver({
 var headsetFilter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
 context.registerReceiver(headsetReceiver, headsetFilter);
 
-// ===== Volume up/down =====
+// ===== Volume change =====
 importClass(android.database.ContentObserver);
 importClass(android.os.Handler);
 importClass(android.provider.Settings);
@@ -147,7 +124,6 @@ context.registerReceiver(noisyReceiver, noisyFilter);
 // ===== Unregister =====
 events.on("exit", () => {
     context.unregisterReceiver(btReceiver);
-    context.unregisterReceiver(deviceReceiver);
     context.unregisterReceiver(headsetReceiver);
     context.getContentResolver().unregisterContentObserver(volumeObserver);
     audioManager.unregisterAudioPlaybackCallback(callback);
@@ -155,4 +131,4 @@ events.on("exit", () => {
 });
 
 // ===== Keep script alive =====
-setInterval(()=>{}, CHECK_INTERVAL);
+setInterval(() => {}, 1 << 30);
