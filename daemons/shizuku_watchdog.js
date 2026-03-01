@@ -114,6 +114,7 @@ exit 1`;
 
 // ===== Start Shizuk via Termuxu =====
 function startShizuku() {
+    Settings.Global.putInt(resolver, "adb_wifi_enabled", 0);
     Settings.Global.putInt(resolver, "adb_wifi_enabled", 1);
     Settings.Global.putInt(resolver, "adb_enabled", 1);
     runInTermuxCommand([SHIZUKU_SCRIPT]);
