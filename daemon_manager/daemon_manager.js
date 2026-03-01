@@ -54,7 +54,7 @@ setInterval(() => {
     });
     if (!wakeLock.isHeld()) {
         wakeLock.acquire();
-        console.log("Daemon manager wake lock acquired.");
+        console.log("Daemon manager wake lock acquired");
     }
 }, CHECK_INTERVAL);
 
@@ -63,6 +63,6 @@ setInterval(() => {}, 1 << 30);
 events.on("exit", () => {
     if (wakeLock.isHeld()) {
         wakeLock.release();
-        console.log("Daemon manager wake lock released.");
+        console.log("Daemon manager wake lock released");
     }
 });

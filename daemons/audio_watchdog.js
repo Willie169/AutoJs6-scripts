@@ -1,5 +1,12 @@
 /*
  * Audio Watchdog
+ *
+ * Function:
+ *  - Log Bluetooth enabled/disabled/connected/disconnected
+ *  - Log headphone inserted/removed
+ *  - Log volume change
+ *  - Log other apps started and ended playing media
+ *  - Log ACTION_AUDIO_BECOMING_NOISY event
  */
 
 // ===== Request permission =====

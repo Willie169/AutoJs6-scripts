@@ -13,7 +13,7 @@
 
 // ===== Configurable parameters start =====
 const CHECK_INTERVAL = 10000;
-const BASELINE_FILE = "../accessibility_baseline.txt";
+const BASELINE_FILE = "../.accessibility_baseline.txt";
 // ===== Configurable parameters end =====
 
 // ===== Java class path =====
