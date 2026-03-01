@@ -7,7 +7,7 @@ var isWifiEnabled = wifiManager.isWifiEnabled();
 var hasIpAddress = wifiInfo.getIpAddress() !== 0;
 var isWifiConnected = isWifiEnabled && hasIpAddress;
 if (isWifiConnected) {    
-    console.log("WiFi connected:", wifiInfo.getSSID());
+    console.info("WiFi connected:", wifiInfo.getSSID());
 } else {
-    console.log("WiFi not connected");
+    console.info("WiFi not connected");
 }
