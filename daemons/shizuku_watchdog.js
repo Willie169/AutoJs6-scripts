@@ -146,6 +146,6 @@ function watchdog() {
         writeShizukuScriptInTermux();
         startShizuku();
         clearInterval(intervalId);
-        setTimeout(exit, 100000);
+        setTimeout(exit, 500000);
     }
 }
