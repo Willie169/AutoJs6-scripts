@@ -1,3 +1,5 @@
+// It is recommended to use https://github.com/thedjchi/Shizuku instead
+
 /**
  * Shizuku Watchdog
  *
