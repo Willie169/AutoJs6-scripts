@@ -115,8 +115,6 @@ var callback = new AudioManager.AudioPlaybackCallback({
 audioManager.registerAudioPlaybackCallback(callback, null);
 
 // ===== Audio noisy received =====
-importClass(android.content.BroadcastReceiver);
-
 var noisyReceiver = new BroadcastReceiver({
     onReceive: function (context, intent) {
         if (intent.getAction() === AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
