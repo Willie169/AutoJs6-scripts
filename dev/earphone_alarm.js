@@ -104,13 +104,15 @@ function loadAlarms() {
     alarms = [];
     try {
         let lines = file.split("\n");
-        lines.forEach(line => {
+        lines.forEach((line, index) => {
             line = line.trim();
             if (!line || line.startsWith("#")) return;
             // Format: Time Snooze Repeat Trigger Ringtone Vibration
-            // e.g. 15:30 -1 0111110 01 ./a.opus -1
-            let parts = line.split(/\s+/);
+            // e.g. 15:30 -1 0111110 01 '/storage/emulated/0/Rick Astley - Never Gonna Give You Up (Official Music Video).mp3' -1
+            let regex = /(?:[^\s'"]+|["'][^"']*["'])+/g;
+            let parts = line.match(regex);
             if (parts.length < 6) return;
+            parts = parts.map(p => (p.startsWith('"') || p.startsWith("'")) ? p.slice(1,-1) : p);
 
             let [time, snooze, repeat, triggerCond, ringtone, vibration] = parts;
             let [hh, mm, ss] = time.split(":").map(Number);
@@ -119,7 +121,7 @@ function loadAlarms() {
             let [snoozeMM, snoozeSS] = snooze.split(":").map(Number);
             if (snoozeSS === undefined) snoozeSS = 0;
 
-            alarms.push({
+            var alarm = {
                 hour: hh,
                 minute: mm,
                 second: ss,
@@ -127,8 +129,11 @@ function loadAlarms() {
                 repeat: repeat.padStart(7,'0'), // SMTWTFS
                 triggerCond,
                 ringtone,
-                vibration: vibration === "-1" ? false : true
-            });
+                vibration: vibration === "-1" ? false : true,
+                triggeredToday: false,
+                index: index
+            }
+            alarms.push(alarm);
         });
     } catch (e) {
         console.error("Failed to read alarms:", e);
@@ -140,17 +145,33 @@ function checkAlarms() {
     let now = new Date();
     let weekday = now.getDay(); // 0=Sun,6=Sat
     alarms.forEach(alarm => {
-        if (alarm.repeat[weekday] !== '1') return;
-        if (now.getHours() === alarm.hour && now.getMinutes() === alarm.minute && now.getSeconds() === alarm.second) {            
+        if (alarm.triggeredToday) return;
+        if (alarm.repeat[weekday] !== '1' && alarm.repeat !== "0000000") return;
+        if (now.getHours() === alarm.hour && now.getMinutes() === alarm.minute && now.getSeconds() >= alarm.second) {
             // check trigger condition
             // 0 = not connected, 1 = connected
             let cond = alarm.triggerCond;
             let allow = false;
             if (cond === "0" && !earphone) allow = true;
             if (cond === "1" && earphone) allow = true;
+            if (alarm.repeat === "0000000") commentOutAlarmLine(alarm.index);
             if (allow) triggerAlarm(alarm);
         }
     });
+}
+
+// ===== Comment Out Alarm Line =====
+function commentOutAlarmLine(index) {
+    try {
+        let lines = file.split("\n");
+        if (index < lines.length) {
+            lines[index] = "# " + lines[index];
+            files.write(ALARM_FILE, lines.join("\n"));
+            console.log("One-time alarm commented out:", lines[index]);
+        }
+    } catch (e) {
+        console.error("Failed to comment out alarm:", e);
+    }
 }
 
 // ===== Alarm Trigger =====
