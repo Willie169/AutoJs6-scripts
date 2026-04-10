@@ -3,6 +3,21 @@ const CHECK_INTERVAL = 9973;
 const DAEMONS_DIR = "../daemons/";
 // ===== Configurable parameters end =====
 
+function __ensureSingleInstance() {
+    const mySource = engines.myEngine().getSource()?.toString();
+    for (let e of engines.all()) {
+        if (e.id === engines.myEngine().id) continue;
+        let src = e.getSource();
+        if (!src) continue;
+        if (src.toString() === mySource) {
+            console.info("Daemon Manager already running, existing");
+            exit();
+        }
+    }
+}
+
+__ensureSingleInstance();
+
 function __isScriptRunning(name) {
     let list = engines.all();
     for (let e of list) {
