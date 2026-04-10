@@ -9,7 +9,6 @@ function __ensureSingleInstance() {
         let src = e.getSource();
         if (!src) continue;
         if (src.toString() === mySource) {
-            console.info("Daemon Manager Helper A already running, existing");
             exit();
         }
     }
