@@ -16,6 +16,9 @@ const CHECK_INTERVAL = 10000;
 const BASELINE_FILE = "../.accessibility_baseline.txt";
 // ===== Configurable parameters end =====
 
+// Consecutive recovery failures for each service
+var recoveryFailures = {};
+
 // ===== Java class path =====
 var Settings = android.provider.Settings;
 var resolver = context.getContentResolver();
@@ -119,11 +122,30 @@ function watchdog() {
     }
     baseline = filteredBaseline;
 
+    var servicesToRemove = [];
+    
     for (var i = 0; i < baseline.length; i++) {
-        if (current.indexOf(baseline[i]) === -1) {
-            console.warn("Accessibility service disabled detected: " + baseline[i]);
-            current.push(baseline[i]);
-            changed = true;
+        var service = baseline[i];
+    
+        if (current.indexOf(service) === -1) {
+            console.warn("Accessibility service disabled detected: " + service);
+
+            recoveryFailures[service] = (recoveryFailures[service] || 0) + 1;
+    
+            if (recoveryFailures[service] >= 2) {
+                console.warn(
+                    "Accessibility service failed to recover twice, removing from baseline: " +
+                    service
+                );
+                servicesToRemove.push(service);
+                baselineChanged = true;
+                delete recoveryFailures[service];
+            } else {
+                current.push(service);
+                changed = true;
+            }
+        } else {
+            delete recoveryFailures[service];
         }
     }
 
