@@ -15,7 +15,8 @@ runtime.requestPermissions([android.Manifest.permission.BLUETOOTH_CONNECT]);
 // ===== Shared =====
 importClass(android.media.AudioManager);
 var audioManager = context.getSystemService(android.content.Context.AUDIO_SERVICE);
-importClass(android.content.IntentFilter);importClass(android.content.Intent);
+importClass(android.content.IntentFilter);
+importClass(android.content.Intent);
 importClass(android.content.BroadcastReceiver);
 
 // ===== Bluetooth =====
@@ -85,7 +86,7 @@ var myUid = android.os.Process.myUid();
 var otherAppPlaying = false;
 
 var callback = new AudioManager.AudioPlaybackCallback({
-    onPlaybackConfigChanged: function(configs) {    
+    onPlaybackConfigChanged: function(configs) {
         var foundOtherActive = false;
 
         configs.forEach(function(config){
