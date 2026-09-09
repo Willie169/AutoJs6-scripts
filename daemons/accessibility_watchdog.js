@@ -114,7 +114,7 @@ function watchdog() {
         if (serviceExists(baseline[i])) {
             filteredBaseline.push(baseline[i]);
         } else {
-            console.warn("Accessibility service uninstalled, removing from baseline: " + baseline[i]);
+            console.warn("App uninstalled or disabled, removing from baseline: " + baseline[i]);
             baselineChanged = true;
         }
     }
