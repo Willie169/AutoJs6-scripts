@@ -68,11 +68,9 @@ function setEnabledServices(value) {
 function serviceExists(serviceName) {
     try {
         var parts = serviceName.split("/");
-        if (parts.length !== 2) return false;
-
         var pkg = parts[0];
-        pm.getPackageInfo(pkg, 0);
-        return true;
+        var appInfo = pm.getApplicationInfo(pkg, 0);
+        return appInfo.enabled;
     } catch (e) {
         return false;
     }
